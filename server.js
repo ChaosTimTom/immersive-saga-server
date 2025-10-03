@@ -1,31 +1,30 @@
-import express from "express";
-import bodyParser from "body-parser";
-import OpenAI from "openai";
-import http from "http";
+// server.js
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import http from "http";
 import { Server as SocketIOServer } from "socket.io";
+import OpenAI from "openai";
+
 import { initDb } from "./db/index.js";
 import { syncModels, Player } from "./db/models.js";
 import { social } from "./routes/social.js";
 import { worlds } from "./routes/worlds.js";
 
-
-const app = express();
-const port = process.env.PORT || 3000;
-app.use(bodyParser.json());
-dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// REST routes
 app.use("/api", social);
 app.use("/api/worlds", worlds);
 
-
-
+// OpenAI client
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Simple health route + legacy player-action route
 app.get("/", (_req, res) => res.send("Saga server is up"));
 app.post("/player-action", async (req, res) => {
   const { inputText } = req.body || {};
@@ -42,6 +41,7 @@ app.post("/player-action", async (req, res) => {
   }
 });
 
+// HTTP server + Socket.IO
 const server = http.createServer(app);
 const io = new SocketIOServer(server, { cors: { origin: "*" } });
 
@@ -54,9 +54,7 @@ io.on("connection", (socket) => {
   });
 });
 
-
-app.listen(port, () => console.log(`Saga server on :${port}`));
-
+// Boot
 const PORT = process.env.PORT || 3000;
 const start = async () => {
   await initDb();
@@ -64,4 +62,3 @@ const start = async () => {
   server.listen(PORT, () => console.log(`Server on :${PORT}`));
 };
 start();
-
